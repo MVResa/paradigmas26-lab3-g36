@@ -1,5 +1,15 @@
+import org.apache.spark.sql.SparkSession
+
 object Main {
   def main(args: Array[String]): Unit = {
+    //spark session init
+    val spark = SparkSession.builder()
+    .appName("RedditNER")
+    .master("local[*]")
+    .getOrCreate()
+    val sc = spark.sparkContext
+
+
     // Parse command-line arguments
     val cmdArgs = CommandLineArgs.parse(args) match {
       case Some(parsed) => parsed
@@ -10,23 +20,50 @@ object Main {
     val subscriptionOpts = FileIO.readSubscriptions(cmdArgs.subscriptionFile)
 
     // Filter out malformed subscriptions (None values)
-    val subscriptions = subscriptionOpts.flatten
+    val subscriptions = subscriptionOpts.flatMap {
+      case Some(sub) => Some(sub)
+      case None =>
+        println("Warning: Skipping malformed subscription (missing 'name' or 'url' field)")
+        None
+    }
 
+    if (subscriptions.isEmpty) {
+      println("Error: No valid subscriptions found")
+      return
+    }
+
+    //paralelize subs 
+    val subscriptionsRDD = sc.parallelize(subscriptions)
+    
     // Download feeds and parse posts, tracking success/failure
-    val downloadResults = subscriptions.map { subscription =>
+    /* val downloadResults = subscriptions.map { subscription =>
       val feedOpt = FileIO.downloadFeed(subscription.url)
       val posts = feedOpt.fold(List[Post]())(JsonParser.parsePosts(_, subscription.name))
       (feedOpt.isDefined, posts)
-    }
+    } */
+    // FlatMap para obtener el RDD[Post]
+    val downloadResultsRDD = subscriptionsRDD.map { subscription =>
+      val feedOpt = FileIO.downloadFeed(subscription.url)
+      val posts = feedOpt match {
+        case Some(content) => 
+          JsonParser.parsePosts(content, subscription.name, subscription.url)
+        case None =>
+          println(s"Warning: Failed to download from '${subscription.name}' (${subscription.url})")
+          List[Post]()
+      }
+      (feedOpt.isDefined, posts)
+    }.collect().toList
+
+    //change downloadResultsRDD for downloadResults for original structure
 
     // Count feed successes/failures
-    val feedsSuccess = downloadResults.count(_._1)
-    val feedsFailed = downloadResults.length - feedsSuccess
+    val feedsSuccess = downloadResultsRDD.count(_._1)
+    val feedsFailed = downloadResultsRDD.length - feedsSuccess
 
     // Flatten all posts and count JSON parse failures
-    val allPosts = downloadResults.flatMap(_._2)
+    val allPosts = downloadResultsRDD.flatMap(_._2)
     val postsSuccess = allPosts.length
-    val postsFailed = downloadResults.count(_._2.isEmpty)
+    val postsFailed = downloadResultsRDD.count(_._2.isEmpty)
 
     // Filter empty posts
     val filteredPosts = Analyzer.filterEmptyPosts(allPosts)

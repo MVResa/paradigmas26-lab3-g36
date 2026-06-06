@@ -38,3 +38,6 @@ Todos excepto contar entidades porque dependemos de que tengamos la lista comple
 
 ## Ejercicio 1D 
 Las funciones que se le pasan a Spark deben poder serializarse para viajar por la red a los workers. No pueden depender de estado compartido porque cada worker trabaja de forma independiente. Y deben evitar efectos secundarios porque Spark puede reejecutar una función si un worker falla.
+
+## Ejercicio 2 
+En caso de propagarse las excepciones dentro de un worker, el driver fallaria e intentaria relanzar la tarea hasta un maximo de *spark.task.maxFailures* , si todos los intentos de llevar a cabo la tarea fallaran el sistema colapsaria, por eso cada worker debe tener un manejar las excepciones que se podrian presentar de manera independiente.
