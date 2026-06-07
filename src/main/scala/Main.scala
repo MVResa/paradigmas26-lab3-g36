@@ -93,21 +93,23 @@ object Main {
       return
     }
 
+// list posts in RDD
+    val RDDPosts = sc.parallelize(filteredPosts);
+
     // Load dictionaries
     val dictionary = Dictionary.loadAll(cmdArgs.entitiesDir)
 
     // Detect entities in all posts (combine title and selftext)
-    val allEntities = filteredPosts.flatMap { post =>
+    val allEntities = RDDPosts.flatMap { post =>
       val combinedText = post.title + " " + post.selftext
       Analyzer.detectEntities(combinedText, dictionary)
     }
 
-    // Count entities
-    val entityCounts = Analyzer.countEntities(allEntities)
-    val typeStats = Analyzer.countByType(allEntities)
+    // cuenta el numero de entidades por tipo y nombre
+    val entityPairsRDD = allEntities.map(entity => ((entity.entityType, entity.text), 1))
+    val entityCountsRDD = entityPairsRDD.reduceByKey(_ + _)
+    val entityCounts = entityCountsRDD.collect().toMap
 
-    println(Formatters.formatTypeStats(typeStats))
-    println()
     println(Formatters.formatEntityStats(entityCounts, cmdArgs.topK))
   }
 }
