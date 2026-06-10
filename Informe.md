@@ -41,3 +41,8 @@ Las funciones que se le pasan a Spark deben poder serializarse para viajar por l
 
 ## Ejercicio 2 
 En caso de propagarse las excepciones dentro de un worker, el driver fallaria e intentaria relanzar la tarea hasta un maximo de *spark.task.maxFailures* , si todos los intentos de llevar a cabo la tarea fallaran el sistema colapsaria, por eso cada worker debe tener un manejar las excepciones que se podrian presentar de manera independiente.
+
+## Ejercicio 3
+reduceByKey es una barrera de sincronización porque ningún worker puede calcular el total final de entidades hasta que todos los workers terminen de trabajar y envien sus datos, sino los datos estarian incompletos.
+La restricción que tiene la función que se le pasa a reduceByKey es que trabaja sumando 2 valores, al ser asociativa y conmutativa puede sumar los resultados de distintos workers sin importar el orden.
+La lectura del diccionario se hace en el driver asi Spark lo serializa y se lo envia a los workers.
