@@ -46,3 +46,11 @@ En caso de propagarse las excepciones dentro de un worker, el driver fallaria e 
 reduceByKey es una barrera de sincronización porque ningún worker puede calcular el total final de entidades hasta que todos los workers terminen de trabajar y envien sus datos, sino los datos estarian incompletos.
 La restricción que tiene la función que se le pasa a reduceByKey es que trabaja sumando 2 valores, al ser asociativa y conmutativa puede sumar los resultados de distintos workers sin importar el orden.
 La lectura del diccionario se hace en el driver asi Spark lo serializa y se lo envia a los workers.
+
+## Ejercicio 4
+a) Porque los workers solo tienen permisos de escritura (.add) y no pueden leer el valor consolidado del acumulador durante la ejecución distribuida. Intentar usar su valor para alterar el flujo lógico haría que cada worker tome decisiones a ciegas basándose solo en su fragmento de datos, rompiendo la consistencia del pipeline.
+Un Accumulator puede dar un valor incorrecto si estos se modifican dentro de transformaciones como map o flatMap y una tarea distribuida falla. Si Spark reinicia una tarea fallida para garantizar la tolerancia a fallos, volverá a ejecutar el código de la transformación y se contaria dos veces el acumulador.
+
+b) Está disponible inmediatamente después de que se complete la ejecución de una acción terminal (.collect()). En ese momento, Spark consolida los resultados de todos los workers y le permite al Driver leer el total definitivo mediante el método .value.
+
+c) En cuanto al tiempo de ejecución, para el volumen de datos actual no se aprecia una diferencia amplia entre Spark y la versión secuencial, pero esto es porque el beneficio de la paralelización se ve opacado por el overhead de inicialización (levantar la SparkSession, coordinar hilos, serializar funciones y gestionar la red con el mock). En un caso mucho más denso la vesion con Spark superaria ampliamente a la versión secuencial.
