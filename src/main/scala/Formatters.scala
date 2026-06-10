@@ -63,10 +63,11 @@ $formatted"""
   }
 
   // Formato de tiempo de ejecución
-  def formatExecutionTimes(downloadTime: Double): String = {
-    val totalTime = downloadTime
+  def formatExecutionTimes(downloadTime: Double, nerTime: Double): String = {
+    val totalTime = downloadTime + nerTime
     s"""============ TIEMPOS DE EJECUCIÓN ============
 Etapa 1 (Descarga y Filtrado RDD)  : $downloadTime segundos
+Etapa 2 (Extracción NER Map-Reduce) : $nerTime segundos
 ------------------------------------------------------------
 Tiempo Total del Pipeline          : $totalTime segundos"""
   }

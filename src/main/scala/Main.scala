@@ -90,10 +90,6 @@ object Main {
       "avgChars" -> avgChars.toInt
     )
 
-    // Print output
-    println(Formatters.formatProcessingStats(stats))
-    println()
-
     // Check if we have any posts to process
     if (filteredPosts.isEmpty) {
       println("Error: No valid posts downloaded after filtering")
@@ -115,18 +111,20 @@ object Main {
     // cuenta el numero de entidades por tipo y nombre
     val entityPairsRDD = allEntities.map(entity => ((entity.entityType, entity.text), 1))
     val entityCountsRDD = entityPairsRDD.reduceByKey(_ + _)
+    val t0_ner = System.currentTimeMillis()
     val entityCounts = entityCountsRDD.collect().toMap
-
-    // Count entities
-    val entityCounts = Analyzer.countEntities(allEntities)
-    val typeStats = Analyzer.countByType(allEntities)
+    val t1_ner = System.currentTimeMillis()
 
     // Medimos los tiempos
     val durationDescarga = (t1_descarga - t0_descarga) / 1000.0
-
+    val durationNER = (t1_ner - t0_ner) / 1000.0
+    
+    // Print output
+    println(Formatters.formatProcessingStats(stats))
+    println()
     println(Formatters.formatEntityStats(entityCounts, cmdArgs.topK))
     println()
-    println(Formatters.formatExecutionTimes(durationDescarga))
+    println(Formatters.formatExecutionTimes(durationDescarga, durationNER))
     println()
   }
 }
