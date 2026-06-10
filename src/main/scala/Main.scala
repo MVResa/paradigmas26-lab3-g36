@@ -48,7 +48,7 @@ object Main {
     } */
 
     // FlatMap para obtener el RDD[Post]
-    val downloadResultsRDD = subscriptionsRDD.flatmap { subscription =>
+    val downloadResultsRDD = subscriptionsRDD.flatMap { subscription =>
       val feedOpt = FileIO.downloadFeed(subscription.url)
       val posts = feedOpt match {
         case Some(content) => 
@@ -71,7 +71,9 @@ object Main {
       !isEmpty
     }
 
+    val t0_descarga = System.currentTimeMillis()
     val filteredPosts = filteredPostsRDD.collect().toList
+    val t1_descarga = System.currentTimeMillis()
 
     // Calculate average characters in filtered posts
     val avgChars =
@@ -111,8 +113,14 @@ object Main {
     val entityCounts = Analyzer.countEntities(allEntities)
     val typeStats = Analyzer.countByType(allEntities)
 
+    // Medimos los tiempos
+    val durationDescarga = (t1_descarga - t0_descarga) / 1000.0
+
     println(Formatters.formatTypeStats(typeStats))
     println()
     println(Formatters.formatEntityStats(entityCounts, cmdArgs.topK))
+    println()
+    println(Formatters.formatExecutionTimes(durationDescarga))
+    println()
   }
 }

@@ -61,4 +61,13 @@ $typeLines"""
     s"""============ ENTIDADES NOMBRADAS MÁS FRECUENTES ============
 $formatted"""
   }
+
+  // Formato de tiempo de ejecución
+  def formatExecutionTimes(downloadTime: Double): String = {
+    val totalTime = downloadTime
+    s"""============ TIEMPOS DE EJECUCIÓN ============
+Etapa 1 (Descarga y Filtrado RDD)  : $downloadTime segundos
+------------------------------------------------------------
+Tiempo Total del Pipeline          : $totalTime segundos"""
+  }
 }
