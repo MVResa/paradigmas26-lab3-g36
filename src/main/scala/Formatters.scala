@@ -9,7 +9,6 @@ object Formatters {
     val feedsSuccess = stats.getOrElse("feedsSuccess", 0)
     val feedsFailed = stats.getOrElse("feedsFailed", 0)
     val postsSuccess = stats.getOrElse("postsSuccess", 0)
-    val postsFailed = stats.getOrElse("postsFailed", 0)
     val postsFiltered = stats.getOrElse("postsFiltered", 0)
     val avgChars = stats.getOrElse("avgChars", 0)
 
@@ -17,7 +16,6 @@ object Formatters {
 Feeds descargados exitosamente: $feedsSuccess
 Feeds fallidos: $feedsFailed
 Posts descargados exitosamente: $postsSuccess
-Posts fallidos: $postsFailed
 Posts filtrados (vacíos/nulos): $postsFiltered
 Largo promedio en posts: $avgChars"""
   }

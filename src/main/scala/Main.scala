@@ -9,6 +9,11 @@ object Main {
     .getOrCreate()
     val sc = spark.sparkContext
 
+    // Acumuladores
+    val feedsSuccessAcc = sc.longAccumulator("FeedsSuccess")
+    val feedsFailedAcc = sc.longAccumulator("FeedsFailed")
+    val postsTotalAcc = sc.longAccumulator("PostsTotal")
+    val postsFilteredAcc = sc.longAccumulator("PostsFiltered")
 
     // Parse command-line arguments
     val cmdArgs = CommandLineArgs.parse(args) match {
@@ -41,46 +46,46 @@ object Main {
       val posts = feedOpt.fold(List[Post]())(JsonParser.parsePosts(_, subscription.name))
       (feedOpt.isDefined, posts)
     } */
+
     // FlatMap para obtener el RDD[Post]
-    val downloadResultsRDD = subscriptionsRDD.map { subscription =>
+    val downloadResultsRDD = subscriptionsRDD.flatmap { subscription =>
       val feedOpt = FileIO.downloadFeed(subscription.url)
       val posts = feedOpt match {
         case Some(content) => 
-          JsonParser.parsePosts(content, subscription.name, subscription.url)
+          feedsSuccessAcc.add(1)
+          val parsedPosts = JsonParser.parsePosts(content, subscription.name, subscription.url)
+          postsTotalAcc.add(parsedPosts.length)
+          parsedPosts
         case None =>
           println(s"Warning: Failed to download from '${subscription.name}' (${subscription.url})")
-          List[Post]()
+          feedsFailedAcc.add(1)
+          List.empty[Post]
       }
-      (feedOpt.isDefined, posts)
-    }.collect().toList
+      posts
+    }
 
-    //change downloadResultsRDD for downloadResults for original structure
+    // filter: descarta posts vacíos e incrementa postsEmptyAcc por cada uno
+    val filteredPostsRDD = downloadResultsRDD.filter { post =>
+      val isEmpty = post.title.isEmpty && post.selftext.isEmpty
+      if (isEmpty) postsFilteredAcc.add(1)
+      !isEmpty
+    }
 
-    // Count feed successes/failures
-    val feedsSuccess = downloadResultsRDD.count(_._1)
-    val feedsFailed = downloadResultsRDD.length - feedsSuccess
-
-    // Flatten all posts and count JSON parse failures
-    val allPosts = downloadResultsRDD.flatMap(_._2)
-    val postsSuccess = allPosts.length
-    val postsFailed = downloadResultsRDD.count(_._2.isEmpty)
-
-    // Filter empty posts
-    val filteredPosts = Analyzer.filterEmptyPosts(allPosts)
-    val postsFiltered = allPosts.length - filteredPosts.length
+    val filteredPosts = filteredPostsRDD.collect().toList
 
     // Calculate average characters in filtered posts
-    val totalChars = filteredPosts.map(post => post.title.length + post.selftext.length).sum
-    val avgChars = if (filteredPosts.nonEmpty) totalChars / filteredPosts.length else 0
-
-    // Prepare statistics
+    val avgChars =
+      if (filteredPosts.nonEmpty)
+        filteredPosts.map(p => p.title.length + p.selftext.length).sum / filteredPosts.length
+      else 0L
+    
+    // Prepare statistics (.int o cambiar el parametro esperado?)
     val stats = Map(
-      "feedsSuccess" -> feedsSuccess,
-      "feedsFailed" -> feedsFailed,
-      "postsSuccess" -> postsSuccess,
-      "postsFailed" -> postsFailed,
-      "postsFiltered" -> postsFiltered,
-      "avgChars" -> avgChars
+      "feedsSuccess"  -> feedsSuccessAcc.value.toInt,
+      "feedsFailed"   -> feedsFailedAcc.value.toInt,
+      "postsSuccess"  -> postsTotalAcc.value.toInt,
+      "postsFiltered" -> postsFilteredAcc.value.toInt,
+      "avgChars" -> avgChars.toInt
     )
 
     // Print output
