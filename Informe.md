@@ -53,4 +53,12 @@ Un Accumulator puede dar un valor incorrecto si estos se modifican dentro de tra
 
 b) Está disponible inmediatamente después de que se complete la ejecución de una acción terminal (.collect()). En ese momento, Spark consolida los resultados de todos los workers y le permite al Driver leer el total definitivo mediante el método .value.
 
-c) En cuanto al tiempo de ejecución, para el volumen de datos actual no se aprecia una diferencia amplia entre Spark y la versión secuencial, pero esto es porque el beneficio de la paralelización se ve opacado por el overhead de inicialización (levantar la SparkSession, coordinar hilos, serializar funciones y gestionar la red con el mock). En un caso mucho más denso la vesion con Spark superaria ampliamente a la versión secuencial.
+c) En cuanto al tiempo de ejecución, a pesar de trabajar con un volumen acotado de datos (4 feeds y 100 posts),ejecutando las dos versiones en la mismas condicioenes (en este caso usando mock) se consiguió un tiempo de 12 segundos con Apache Spark y en la implementación secuencial de base 22 segundos. Es importante aclarar que estos datos cambian entre computadora y computadora dado a que la velocidad de Spark está ligada a la cantidad de nucleos del procesador pero de igual manera. Mientras que la versión secuencial realiza las peticiones HTTP al servidor mock una por una de manera lineal, sufriendo acumulativamente las latencias de red, Spark distribuye las suscripciones en un RDD aprovechando el multi-threading local. Esto permite que las descargas de internet ocurran en forma simultánea y concurrente en los Workers, absorbiendo los tiempos de espera muertos y superando con creces el costo del overhead de inicialización del entorno distribuido.
+
+## Ejercicio 5 
+
+1) Con nuestra version original la descarga de archivos se ejecutaba dos veces, una al llamar a collect para utilizar el codigo base de avgChars y otra luego de llamar nuevamente a collect en el calculo de entidades al haber recontruido el rdd para el punto 3 , al aplicar el cache logramos que la descarga se aplique una sola vez.
+
+2) Se rompe la distribución, el driver se convierte en cuello de botella. Si tenemos millones de posts, el driver tiene que cargar todo en memoria y se duplica el tráfico de red — los datos viajan workers→driver y después driver→workers sin ningún beneficio.
+
+3) El rdd se guarda en la memoria de los workers recién cuando se ejecuta la primera acción terminal sobre ese RDD (en nuestro version final, cuando llamamos a .count()).
