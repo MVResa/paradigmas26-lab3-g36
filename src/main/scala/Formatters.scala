@@ -9,7 +9,6 @@ object Formatters {
     val feedsSuccess = stats.getOrElse("feedsSuccess", 0)
     val feedsFailed = stats.getOrElse("feedsFailed", 0)
     val postsSuccess = stats.getOrElse("postsSuccess", 0)
-    val postsFailed = stats.getOrElse("postsFailed", 0)
     val postsFiltered = stats.getOrElse("postsFiltered", 0)
     val avgChars = stats.getOrElse("avgChars", 0)
 
@@ -17,7 +16,6 @@ object Formatters {
 Feeds descargados exitosamente: $feedsSuccess
 Feeds fallidos: $feedsFailed
 Posts descargados exitosamente: $postsSuccess
-Posts fallidos: $postsFailed
 Posts filtrados (vacíos/nulos): $postsFiltered
 Largo promedio en posts: $avgChars"""
   }
@@ -62,5 +60,15 @@ $typeLines"""
 
     s"""============ ENTIDADES NOMBRADAS MÁS FRECUENTES ============
 $formatted"""
+  }
+
+  // Formato de tiempo de ejecución
+  def formatExecutionTimes(downloadTime: Double, nerTime: Double): String = {
+    val totalTime = downloadTime + nerTime
+    s"""============ TIEMPOS DE EJECUCIÓN ============
+Etapa 1 (Descarga y Filtrado RDD)  : $downloadTime segundos
+Etapa 2 (Extracción NER Map-Reduce) : $nerTime segundos
+------------------------------------------------------------
+Tiempo Total del Pipeline          : $totalTime segundos"""
   }
 }

@@ -7,18 +7,25 @@ object Dictionary {
    * @return Option containing list of entities, None if file missing
    */
   def loadFromFile(filePath: String, entityType: String): Option[List[NamedEntity]] = {
-    FileIO.readDictionaryFile(filePath).map { lines =>
-      lines.map { name =>
-        entityType match {
-          case "Person"              => new Person(name)
-          case "Organization"        => new Organization(name)
-          case "University"          => new University(name)
-          case "Place"               => new Place(name)
-          case "Technology"          => new Technology(name)
-          case "ProgrammingLanguage" => new ProgrammingLanguage(name)
-          case _                     => new Person(name) // fallback
+    try {
+
+      FileIO.readDictionaryFile(filePath).map { lines =>
+        lines.map { name =>
+          entityType match {
+            case "Person"              => new Person(name)
+            case "Organization"        => new Organization(name)
+            case "University"          => new University(name)
+            case "Place"               => new Place(name)
+            case "Technology"          => new Technology(name)
+            case "ProgrammingLanguage" => new ProgrammingLanguage(name)
+            case _                     => new Person(name) // fallback
+          }
         }
       }
+    } catch {
+      case _ : Exception => 
+        println(s"Warning: Could not load $filePath")
+        None
     }
   }
 
@@ -31,6 +38,11 @@ object Dictionary {
   def loadAll(entitiesDir: String): List[NamedEntity] = {
     // Check if entities directory exists
     val dataDir = new java.io.File(entitiesDir)
+
+    if (!dataDir.exists() || !dataDir.isDirectory) {
+      println(s"Error: entities directory '$entitiesDir' not found")
+      return List()
+    }
 
     val peopleOpt = loadFromFile(s"$entitiesDir/people.txt", "Person")
 

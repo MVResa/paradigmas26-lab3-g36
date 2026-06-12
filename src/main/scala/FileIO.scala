@@ -1,6 +1,7 @@
 import scala.io.Source
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import java.io.FileNotFoundException
 
 object FileIO {
 
@@ -11,16 +12,29 @@ object FileIO {
    *         returns empty list if file not found
    */
   def readSubscriptions(filePath: String): List[Option[Subscription]] = {
-    implicit val formats: Formats = DefaultFormats
-    val source = Source.fromFile(filePath)
-    val content = source.mkString
-    source.close()
+    try {
+      implicit val formats: Formats = DefaultFormats
+      val source = Source.fromFile(filePath)
+      val content = source.mkString
+      source.close()
 
-    val json = parse(content)
-    val subscriptions = json.extract[List[Map[String, String]]]
+      val json = parse(content)
+      val subscriptions = json.extract[List[Map[String, String]]]
 
-    subscriptions.map { sub =>
-      Some(Subscription(sub("name"), sub("url")))
+      subscriptions.map { sub =>
+        if (sub.contains("name") && sub.contains("url")) {
+          Some(Subscription(sub("name"), sub("url")))
+        } else {
+          None
+        }
+      }
+    } catch {
+      case _: FileNotFoundException =>
+        println(s"Error: Could not load $filePath - file not found")
+        List()
+      case _: Exception => 
+        println(s"Error: Could not load $filePath - invalid JSON format")
+        List()
     }
   }
 
