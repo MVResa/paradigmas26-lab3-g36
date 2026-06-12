@@ -27,7 +27,7 @@ B-->C Se utiliza filter y con esto elimino las listas malformadas None, queda as
 C-->D Para esto usamos flatMap.
 D-->E Se usa filter para filtrar los posts vacios.
 E-->F Detectar entidades se puede escribir con flatMap porque por cada post se pueden detectar varias entidades.
-F-->G para contar entidades podemos usar reduceByKey porque lo que haria es hagarrar todos los elementos que tengan el mismo nombre y devovleria la cantidad.
+F-->G para contar entidades podemos usar reduceByKey porque lo que haria es agarrar todos los elementos que tengan el mismo nombre y devolveria la cantidad.
 Para rankear y mostrar resultados no hay ninguna abstraccion porque los drivers se encargan de eso. Lo mismo con la carga de diccionarios. 
 
 ## Ejecicio 1C
@@ -40,7 +40,7 @@ Todos excepto contar entidades porque dependemos de que tengamos la lista comple
 Las funciones que se le pasan a Spark deben poder serializarse para viajar por la red a los workers. No pueden depender de estado compartido porque cada worker trabaja de forma independiente. Y deben evitar efectos secundarios porque Spark puede reejecutar una función si un worker falla.
 
 ## Ejercicio 2 
-En caso de propagarse las excepciones dentro de un worker, el driver fallaria e intentaria relanzar la tarea hasta un maximo de *spark.task.maxFailures* , si todos los intentos de llevar a cabo la tarea fallaran el sistema colapsaria, por eso cada worker debe tener un manejar las excepciones que se podrian presentar de manera independiente.
+En caso de propagarse las excepciones dentro de un worker, el driver fallaria e intentaria relanzar la tarea hasta un maximo de *spark.task.maxFailures* , si todos los intentos de llevar a cabo la tarea fallaran el sistema colapsaria, por eso cada worker debe manejar las excepciones que se podrian presentar de manera independiente.
 
 ## Ejercicio 3
 reduceByKey es una barrera de sincronización porque ningún worker puede calcular el total final de entidades hasta que todos los workers terminen de trabajar y envien sus datos, sino los datos estarian incompletos.

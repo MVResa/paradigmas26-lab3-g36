@@ -79,10 +79,11 @@ object Main {
 
     // Calculate average characters in filtered posts
     val avgChars =
-      if (postCount > 0)
+      if (postCount > 0){
+
         val totalChars = cachedFPostRDD.map(p => p.title.length + p.selftext.length.toLong).reduce( _ + _ )
         totalChars / postCount
-      else 0L
+      } else 0L
     
     // Prepare statistics (.int o cambiar el parametro esperado?)
     val stats = Map(
